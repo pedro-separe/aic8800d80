@@ -1,0 +1,103 @@
+#!/bin/sh
+set -u
+
+DKMS_NAME="aic8800d80-recovery"
+DKMS_VERSION="1.0.0"
+KERNEL="$(uname -r)"
+HEADER_DIR="/lib/modules/$KERNEL/build"
+failures=0
+warnings=0
+
+ok() {
+    printf '  [OK] %s\n' "$1"
+}
+
+warn() {
+    printf '  [AVISO] %s\n' "$1"
+    warnings=$((warnings + 1))
+}
+
+fail() {
+    printf '  [FALHA] %s\n' "$1"
+    failures=$((failures + 1))
+}
+
+printf '%s\n' 'AIC8800D80 Recovery — verificação segura'
+printf 'Kernel: %s\n' "$KERNEL"
+printf 'Arquitetura: %s\n\n' "$(uname -m)"
+
+printf '%s\n' 'Ferramentas de compilação:'
+for command_name in dkms gcc make modinfo depmod; do
+    if command -v "$command_name" >/dev/null 2>&1; then
+        ok "$command_name disponível"
+    else
+        fail "$command_name ausente"
+    fi
+done
+
+if [ -d "$HEADER_DIR" ]; then
+    ok "headers presentes para $KERNEL"
+else
+    fail "headers ausentes para $KERNEL"
+fi
+
+printf '\n%s\n' 'Secure Boot:'
+if command -v mokutil >/dev/null 2>&1; then
+    secure_boot_output="$(mokutil --sb-state 2>&1 || true)"
+    case "$secure_boot_output" in
+        *'SecureBoot enabled'*) warn "Secure Boot está ativo; a confiança da assinatura precisa ser confirmada" ;;
+        *'SecureBoot disabled'*) ok "Secure Boot está desativado" ;;
+        *) warn "estado não conclusivo: $secure_boot_output" ;;
+    esac
+else
+    warn "mokutil ausente; estado do Secure Boot desconhecido"
+fi
+
+printf '\n%s\n' 'Estado DKMS:'
+dkms_state="$(dkms status -m "$DKMS_NAME" -v "$DKMS_VERSION" 2>/dev/null || true)"
+if [ -n "$dkms_state" ]; then
+    printf '%s\n' "$dkms_state" | sed 's/^/  /'
+    if printf '%s\n' "$dkms_state" | grep -F "$KERNEL" | grep -q 'installed'; then
+        ok "driver DKMS instalado para o kernel atual"
+    else
+        warn "driver ainda não está instalado para o kernel atual"
+    fi
+else
+    warn "nenhum registro $DKMS_NAME/$DKMS_VERSION encontrado"
+fi
+
+printf '\n%s\n' 'Módulos resolvidos pelo sistema:'
+for module_name in aic_load_fw aic8800_fdrv; do
+    module_path="$(modinfo -n "$module_name" 2>/dev/null || true)"
+    module_vermagic="$(modinfo -F vermagic "$module_name" 2>/dev/null || true)"
+
+    if [ -n "$module_path" ] && [ -f "$module_path" ]; then
+        ok "$module_name: $module_path"
+        case "$module_vermagic" in
+            "$KERNEL"*) ok "$module_name corresponde ao kernel atual" ;;
+            *) fail "$module_name possui vermagic incompatível: $module_vermagic" ;;
+        esac
+    else
+        warn "$module_name ainda não foi localizado"
+    fi
+done
+
+printf '\n%s\n' 'Adaptador USB:'
+if command -v lsusb >/dev/null 2>&1; then
+    usb_state="$(lsusb 2>/dev/null | grep -Ei 'AICSemi|1111:1111|a69c:|368b:' || true)"
+    if [ -n "$usb_state" ]; then
+        printf '%s\n' "$usb_state" | sed 's/^/  /'
+    else
+        warn "nenhum dispositivo AIC8800D80 detectado"
+    fi
+else
+    warn "lsusb ausente; hardware não pôde ser inventariado"
+fi
+
+printf '\nFalhas: %s\nAvisos: %s\n' "$failures" "$warnings"
+
+if [ "$failures" -ne 0 ]; then
+    exit 1
+fi
+
+exit 0

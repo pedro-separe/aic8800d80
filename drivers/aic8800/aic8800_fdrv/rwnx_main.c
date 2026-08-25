@@ -4515,8 +4515,10 @@ static int rwnx_cfg80211_get_tx_power(struct wiphy *wiphy,
  struct wireless_dev *wdev,
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
-int radio_idx,
-unsigned int changed,
+    int radio_idx,
+    unsigned int link_id,
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
+    unsigned int link_id,
 #endif
 	int *mbm)
 {
@@ -9491,4 +9493,3 @@ MODULE_DESCRIPTION(RW_DRV_DESCRIPTION);
 MODULE_VERSION(RWNX_VERS_MOD);
 MODULE_AUTHOR(RW_DRV_COPYRIGHT " " RW_DRV_AUTHOR);
 MODULE_LICENSE("GPL");
-

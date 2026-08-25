@@ -1,0 +1,13 @@
+Package: aic8800d80-recovery-dkms
+Version: 1.0.0-2
+Section: kernel
+Priority: optional
+Architecture: all
+Depends: dkms (>= 3.0), build-essential, kmod, usb-modeswitch, eject
+Conflicts: aic8800-dkms, aic8800d80-dkms
+Maintainer: AIC8800D80 Recovery contributors
+Homepage: https://github.com/pedro-separe/aic8800d80
+Description: Recovery-focused DKMS driver for AIC8800D80 USB Wi-Fi adapters
+ Builds the aic8800_fdrv and aic_load_fw modules for the installed kernel.
+ Includes AIC8800 firmware, udev rules and usb_modeswitch configuration.
+ Modules are installed on disk but are not loaded automatically by this package.

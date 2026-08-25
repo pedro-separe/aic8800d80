@@ -297,8 +297,10 @@ ccflags-y += -DNX_TXQ_CNT=4
 endif
 
 # For old kernel (<=3.19)
-ifeq ($(shell test $(VERSION) -lt 4 -a "$(CONFIG_VENDOR_RWNX)" = y ; echo $$?),0)
+ifeq ($(CONFIG_VENDOR_RWNX),y)
+ifneq ($(filter 1 2 3,$(VERSION)),)
 ccflags-y += -DCONFIG_VENDOR_RWNX_VHT_NO80
+endif
 endif
 
 ccflags-$(CONFIG_RX_REORDER) += -DAICWF_RX_REORDER
@@ -349,8 +351,6 @@ ccflags-$(CONFIG_TEMP_CONTROL) += -DCONFIG_TEMP_CONTROL
 ccflags-$(CONFIG_POWER_LIMIT) += -DCONFIG_POWER_LIMIT
 ccflags-$(CONFIG_EXT_FEM_8800DCDW) += -DCONFIG_EXT_FEM_8800DCDW
 ccflags-$(CONFIG_WOWLAN) += -DCONFIG_WOWLAN
-MAKEFLAGS +=-j$(shell nproc)
-
 # Platform support list
 CONFIG_PLATFORM_ROCKCHIP ?= n
 CONFIG_PLATFORM_ALLWINNER ?= n
@@ -403,7 +403,7 @@ endif
 all: modules
 modules:
 #	make -C $(KDIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) LLVM=1 LLVM_IAS=1 modules
-	make -C $(KDIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
+	+$(MAKE) -C $(KDIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
 install:
 	mkdir -p $(MODDESTDIR)
 	install -p -m 644 $(MODULE_NAME).ko  $(MODDESTDIR)
@@ -415,4 +415,3 @@ uninstall:
 
 clean:
 	rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
-

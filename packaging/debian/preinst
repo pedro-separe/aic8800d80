@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e
+
+PACKAGE_NAME="aic8800d80-recovery"
+DEB_PACKAGE="aic8800d80-recovery-dkms"
+
+package_known=0
+if dpkg-query -W "$DEB_PACKAGE" >/dev/null 2>&1; then
+    package_known=1
+fi
+
+if [ "$package_known" -eq 0 ]; then
+    for existing_path in \
+        /lib/firmware/aic8800* \
+        /etc/usb_modeswitch.d/1111:1111 \
+        /usr/lib/udev/rules.d/60-aic8800d80.rules
+    do
+        if [ -e "$existing_path" ]; then
+            echo "Existing AIC8800 files were found outside this package:" >&2
+            echo "  $existing_path" >&2
+            echo "Back them up and migrate them explicitly before installation." >&2
+            exit 1
+        fi
+    done
+fi
+
+if command -v dkms >/dev/null 2>&1; then
+    conflicting_state="$(
+        dkms status 2>/dev/null |
+        grep -E '^aic8800/' || true
+    )"
+
+    if [ -n "$conflicting_state" ]; then
+        echo "A conflicting manually installed aic8800 DKMS package was found:" >&2
+        echo "$conflicting_state" >&2
+        echo "Remove or migrate it explicitly before installing $PACKAGE_NAME." >&2
+        exit 1
+    fi
+fi
+
+exit 0

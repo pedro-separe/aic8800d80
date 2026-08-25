@@ -1,0 +1,19 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: aic8800d80
+Source: https://github.com/RicknotDev/aic8800d80
+
+Files: drivers/*
+Copyright: AICSemi; RivieraWaves; respective upstream contributors
+License: GPL-2
+
+Files: packaging/*
+Copyright: 2026 AIC8800D80 Recovery contributors
+License: GPL-2
+
+Files: fw/*
+Copyright: respective firmware owners
+License: Redistributed under the terms supplied by the upstream driver project
+
+License: GPL-2
+ On Debian systems, the complete text of the GNU General Public License version 2
+ is available at /usr/share/common-licenses/GPL-2.
